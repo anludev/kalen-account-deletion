@@ -1,0 +1,128 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kalen — Eliminación de cuenta</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; line-height: 1.5; }
+    button { padding: 12px 18px; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; margin-right: 8px; }
+    .primary { background: #e91e63; color: #fff; }
+    .secondary { background: #eee; color: #111; }
+    .status { margin-top: 16px; padding: 12px; border-radius: 8px; background: #f5f5f5; }
+    .ok { background: #e8f5e9; }
+    .err { background: #ffebee; }
+    .warn { background: #fff8e1; }
+  </style>
+</head>
+<body>
+  <h1>Eliminación de cuenta — Kalen</h1>
+  <p>Esta página permite eliminar el respaldo en la nube de tu cuenta de Kalen sin contactar con soporte.</p>
+  <p><strong>Importante:</strong> los datos guardados en tu dispositivo (Room/SharedPreferences) solo se pueden borrar desde la app o desinstalando la aplicación. Esta página elimina únicamente el respaldo de Google Drive.</p>
+
+  <p>
+    <button id="authBtn" class="primary">1. Iniciar sesión con Google</button>
+    <button id="deleteBtn" class="secondary" disabled>2. Eliminar respaldo en la nube</button>
+  </p>
+  <div id="status" class="status warn">Inicia sesión para habilitar la eliminación.</div>
+
+  <h2>Qué se elimina</h2>
+  <ul>
+    <li>Respaldo en Google Drive (appDataFolder): <code>kalen_backup_full.zip</code>.</li>
+    <li>Los datos locales se eliminan desde la app (Ajustes → Eliminar cuenta) o al desinstalar.</li>
+  </ul>
+
+  <h2>Qué puede permanecer</h2>
+  <ul>
+    <li>Tu cuenta de Google.</li>
+    <li>Datos locales si no desinstalas la app ni borras sus datos.</li>
+    <li>Respaldos que no se pudieron borrar por falta de permisos o conexión.</li>
+  </ul>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+    const CLIENT_ID = "651997452150-r1jfod8e79f9bf5r1tkrc2qfkniqouav.apps.googleusercontent.com";
+    const BACKUP_NAME = "kalen_backup_full.zip";
+    const statusEl = document.getElementById("status");
+    const authBtn = document.getElementById("authBtn");
+    const deleteBtn = document.getElementById("deleteBtn");
+    let accessToken = null;
+
+    function show(msg, type = "warn") {
+      statusEl.hidden = false;
+      statusEl.textContent = msg;
+      statusEl.className = "status " + type;
+    }
+
+    async function listBackups(token) {
+      const listRes = await fetch(
+        "https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=" +
+        encodeURIComponent("name = '" + BACKUP_NAME + "' and trashed = false") +
+        "&fields=files(id,name)",
+        { headers: { Authorization: "Bearer " + token } }
+      );
+      if (!listRes.ok) throw new Error("No se pudo listar archivos: " + listRes.status);
+      const data = await listRes.json();
+      return data.files || [];
+    }
+
+    async function deleteBackups() {
+      if (!accessToken) {
+        show("Primero inicia sesión con Google.", "err");
+        return;
+      }
+      deleteBtn.disabled = true;
+      show("Buscando respaldo en Google Drive...");
+      try {
+        const files = await listBackups(accessToken);
+        if (files.length === 0) {
+          show("No se encontró ningún respaldo en la nube. Si tienes datos locales, bórralos desde la app o desinstalando Kalen.", "warn");
+          return;
+        }
+        let deleted = 0;
+        for (const f of files) {
+          const delRes = await fetch("https://www.googleapis.com/drive/v3/files/" + f.id, {
+            method: "DELETE",
+            headers: { Authorization: "Bearer " + accessToken }
+          });
+          if (delRes.ok || delRes.status === 204) {
+            deleted++;
+          } else {
+            throw new Error("No se pudo borrar " + f.name + " (" + delRes.status + ")");
+          }
+        }
+        // Verificación posterior: confirmar que ya no quedan respaldos con ese nombre.
+        const remaining = await listBackups(accessToken);
+        if (remaining.length > 0) {
+          throw new Error("La API respondió correctamente, pero todavía quedan respaldos por borrar.");
+        }
+        show("Eliminación verificada: " + deleted + " respaldo(s) borrado(s). Para borrar los datos locales, usa la app o desinstálala.", "ok");
+      } catch (e) {
+        show("Error: " + e.message, "err");
+      } finally {
+        deleteBtn.disabled = false;
+      }
+    }
+
+    authBtn.addEventListener("click", () => {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: "https://www.googleapis.com/auth/drive.appdata",
+        callback: (resp) => {
+          if (resp.error) {
+            show("Error de autenticación: " + resp.error, "err");
+            return;
+          }
+          accessToken = resp.access_token;
+          deleteBtn.disabled = false;
+          show("Sesión iniciada. Ahora puedes eliminar el respaldo.", "ok");
+        }
+      });
+      tokenClient.requestAccessToken();
+    });
+
+    deleteBtn.addEventListener("click", deleteBackups);
+  </script>
+</body>
+</html>
+EOF
