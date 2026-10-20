@@ -1,43 +1,112 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kalen — Eliminación de cuenta</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; line-height: 1.5; }
-    button { padding: 12px 18px; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; margin-right: 8px; }
-    .primary { background: #e91e63; color: #fff; }
-    .secondary { background: #eee; color: #111; }
-    .status { margin-top: 16px; padding: 12px; border-radius: 8px; background: #f5f5f5; }
-    .ok { background: #e8f5e9; }
-    .err { background: #ffebee; }
-    .warn { background: #fff8e1; }
+    :root {
+      --bg: #f5f9ff;
+      --card: #ffffff;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #dbeafe;
+      --ok: #e8f5e9;
+      --warn: #fff8e1;
+      --err: #ffebee;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: linear-gradient(180deg, #eaf2ff 0%, #f8fbff 100%);
+      color: var(--text);
+    }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+    header { text-align: center; margin-bottom: 20px; }
+    .brand { font-size: 28px; font-weight: 800; color: var(--primary); letter-spacing: 0.5px; }
+    .title { font-size: 24px; font-weight: 700; margin: 8px 0 4px; }
+    .subtitle { color: var(--muted); font-size: 15px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(37,99,235,0.08);
+      margin-bottom: 16px;
+    }
+    .steps { display: grid; gap: 12px; }
+    .step { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: #fbfdff; }
+    .step h3 { margin: 0 0 6px; font-size: 16px; }
+    .btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+    button {
+      padding: 12px 18px; font-size: 15px; border-radius: 10px; border: none; cursor: pointer;
+      font-weight: 600;
+    }
+    .primary { background: var(--primary); color: #fff; }
+    .primary:hover { background: var(--primary-dark); }
+    .secondary { background: #e5e7eb; color: #111; }
+    .secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status { margin-top: 12px; padding: 12px; border-radius: 10px; background: #f5f5f5; }
+    .ok { background: var(--ok); }
+    .warn { background: var(--warn); }
+    .err { background: var(--err); }
+    .info { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 14px; margin-top: 12px; }
+    code { background: #f1f5f9; padding: 2px 6px; border-radius: 6px; }
+    ul { padding-left: 20px; }
+    @media (max-width: 600px) {
+      .title { font-size: 20px; }
+    }
   </style>
 </head>
 <body>
-  <h1>Eliminación de cuenta — Kalen</h1>
-  <p>Esta página permite eliminar el respaldo en la nube de tu cuenta de Kalen sin contactar con soporte.</p>
-  <p><strong>Importante:</strong> los datos guardados en tu dispositivo (Room/SharedPreferences) solo se pueden borrar desde la app o desinstalando la aplicación. Esta página elimina únicamente el respaldo de Google Drive.</p>
+  <div class="wrap">
+    <header>
+      <div class="brand">Kalen</div>
+      <h1 class="title">Eliminar cuenta de Kalen</h1>
+      <p class="subtitle">Elimina el respaldo en la nube de tu cuenta sin contactar con soporte.</p>
+    </header>
 
-  <p>
-    <button id="authBtn" class="primary">1. Iniciar sesión con Google</button>
-    <button id="deleteBtn" class="secondary" disabled>2. Eliminar respaldo en la nube</button>
-  </p>
-  <div id="status" class="status warn">Inicia sesión para habilitar la eliminación.</div>
+    <div class="card">
+      <div class="steps">
+        <div class="step">
+          <h3>Paso 1 · Iniciar sesión con Google</h3>
+          <p>Usa la misma cuenta de Google asociada a Kalen.</p>
+          <div class="btns">
+            <button id="authBtn" class="primary">Iniciar sesión con Google</button>
+          </div>
+        </div>
+        <div class="step">
+          <h3>Paso 2 · Eliminar respaldo en la nube</h3>
+          <p>Elimina únicamente <code>kalen_backup_full.zip</code> de <code>appDataFolder</code>.</p>
+          <div class="btns">
+            <button id="deleteBtn" class="secondary" disabled>Eliminar respaldo en la nube</button>
+          </div>
+        </div>
+      </div>
+      <div id="status" class="status warn">Inicia sesión para habilitar la eliminación.</div>
+    </div>
 
-  <h2>Qué se elimina</h2>
-  <ul>
-    <li>Respaldo en Google Drive (appDataFolder): <code>kalen_backup_full.zip</code>.</li>
-    <li>Los datos locales se eliminan desde la app (Ajustes → Eliminar cuenta) o al desinstalar.</li>
-  </ul>
-
-  <h2>Qué puede permanecer</h2>
-  <ul>
-    <li>Tu cuenta de Google.</li>
-    <li>Datos locales si no desinstalas la app ni borras sus datos.</li>
-    <li>Respaldos que no se pudieron borrar por falta de permisos o conexión.</li>
-  </ul>
+    <div class="card">
+      <h3>Qué se elimina</h3>
+      <ul>
+        <li>Respaldo en Google Drive (appDataFolder): <code>kalen_backup_full.zip</code>.</li>
+        <li>Los datos locales se eliminan desde la app (Ajustes → Eliminar cuenta) o al desinstalar.</li>
+      </ul>
+      <h3>Qué puede permanecer</h3>
+      <ul>
+        <li>Tu cuenta de Google.</li>
+        <li>Datos locales si no desinstalas la app ni borras sus datos.</li>
+        <li>Respaldos que no se pudieron borrar por falta de permisos o conexión.</li>
+      </ul>
+      <div class="info">
+        <strong>Soporte:</strong> kalen.learn@gmail.com<br />
+        Si no puedes acceder a la app, contáctanos y te guiaremos.
+      </div>
+    </div>
+  </div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script>
@@ -55,14 +124,16 @@
     }
 
     async function listBackups(token) {
-      const listRes = await fetch(
-        "https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=" +
-        encodeURIComponent("name = '" + BACKUP_NAME + "' and trashed = false") +
-        "&fields=files(id,name)",
-        { headers: { Authorization: "Bearer " + token } }
-      );
-      if (!listRes.ok) throw new Error("No se pudo listar archivos: " + listRes.status);
-      const data = await listRes.json();
+      const q = "name = '" + BACKUP_NAME + "' and trashed = false";
+      const url = "https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=" +
+        encodeURIComponent(q) + "&fields=files(id,name)";
+      const res = await fetch(url, { headers: { Authorization: "Bearer " + token } });
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Drive list error", res.status, text);
+        throw new Error("No se pudo consultar Drive (" + res.status + ").");
+      }
+      const data = await res.json();
       return data.files || [];
     }
 
@@ -76,7 +147,12 @@
       try {
         const files = await listBackups(accessToken);
         if (files.length === 0) {
-          show("No se encontró ningún respaldo en la nube. Si tienes datos locales, bórralos desde la app o desinstalando Kalen.", "warn");
+          show("No encontramos un respaldo de Kalen en esta cuenta de Google. No se eliminó ningún archivo.", "warn");
+          return;
+        }
+        const confirmed = window.confirm("Se encontraron " + files.length + " respaldo(s). ¿Deseas eliminarlos?");
+        if (!confirmed) {
+          show("Operación cancelada. No se eliminó ningún archivo.", "warn");
           return;
         }
         let deleted = 0;
@@ -88,16 +164,18 @@
           if (delRes.ok || delRes.status === 204) {
             deleted++;
           } else {
-            throw new Error("No se pudo borrar " + f.name + " (" + delRes.status + ")");
+            const text = await delRes.text();
+            console.error("Drive delete error", delRes.status, text);
+            throw new Error("No se pudo borrar " + f.name + " (" + delRes.status + ").");
           }
         }
-        // Verificación posterior: confirmar que ya no quedan respaldos con ese nombre.
         const remaining = await listBackups(accessToken);
         if (remaining.length > 0) {
-          throw new Error("La API respondió correctamente, pero todavía quedan respaldos por borrar.");
+          throw new Error("La API respondió, pero todavía quedan respaldos por borrar.");
         }
         show("Eliminación verificada: " + deleted + " respaldo(s) borrado(s). Para borrar los datos locales, usa la app o desinstálala.", "ok");
       } catch (e) {
+        console.error(e);
         show("Error: " + e.message, "err");
       } finally {
         deleteBtn.disabled = false;
